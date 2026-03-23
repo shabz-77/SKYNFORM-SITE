@@ -10,7 +10,6 @@ export default function IdentityScroll() {
 
   const pinnedRef = useRef<HTMLElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const settleTimersRef = useRef<number[]>([]);
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -23,9 +22,7 @@ export default function IdentityScroll() {
 
   const getViewportHeight = () => {
     if (typeof window === "undefined") return 0;
-    return Math.round(
-      window.visualViewport?.height || window.innerHeight || 0
-    );
+    return Math.round(window.visualViewport?.height || window.innerHeight || 0);
   };
 
   useEffect(() => {
@@ -44,71 +41,32 @@ export default function IdentityScroll() {
       setVhPx(getViewportHeight());
     };
 
-    const triggerScrollRecalc = () => {
-      window.dispatchEvent(new Event("scroll"));
-    };
-
-    const clearSettleTimers = () => {
-      settleTimersRef.current.forEach((id) => window.clearTimeout(id));
-      settleTimersRef.current = [];
-    };
-
-    const scheduleSettlePasses = () => {
-      clearSettleTimers();
-
-      const delays = [0, 120, 320, 700];
-      settleTimersRef.current = delays.map((delay) =>
-        window.setTimeout(() => {
-          setVh();
-          triggerScrollRecalc();
-        }, delay)
-      );
-    };
-
     const resetPage = () => {
       window.scrollTo({ top: 0, behavior: "auto" });
-      setActiveIdx(0);
-      setVh();
 
       requestAnimationFrame(() => {
         setVh();
-        triggerScrollRecalc();
-
-        requestAnimationFrame(() => {
-          setVh();
-          triggerScrollRecalc();
-        });
+        window.dispatchEvent(new Event("scroll"));
       });
-
-      scheduleSettlePasses();
-    };
-
-    const handleResizeLikeEvent = () => {
-      setVh();
-      triggerScrollRecalc();
-      scheduleSettlePasses();
     };
 
     setVh();
     resetPage();
 
-    window.addEventListener("resize", handleResizeLikeEvent, {
-      passive: true,
-    });
-    window.addEventListener("orientationchange", handleResizeLikeEvent);
+    const handleResize = () => {
+      setVh();
+      window.dispatchEvent(new Event("scroll"));
+    };
+
+    window.addEventListener("resize", handleResize, { passive: true });
     window.addEventListener("pageshow", resetPage);
-    window.visualViewport?.addEventListener("resize", handleResizeLikeEvent);
+    window.visualViewport?.addEventListener("resize", handleResize);
 
     return () => {
-      clearSettleTimers();
       mq.removeEventListener?.("change", apply);
-      window.removeEventListener("resize", handleResizeLikeEvent);
-      window.removeEventListener("orientationchange", handleResizeLikeEvent);
+      window.removeEventListener("resize", handleResize);
       window.removeEventListener("pageshow", resetPage);
-      window.visualViewport?.removeEventListener(
-        "resize",
-        handleResizeLikeEvent
-      );
+      window.visualViewport?.removeEventListener("resize", handleResize);
     };
   }, [pathname]);
 
@@ -190,13 +148,14 @@ export default function IdentityScroll() {
         const viewportH = getViewportHeight();
         if (viewportH <= 0) return;
 
-        const exitBufferPx =
-          (viewportH *
-            (mobile ? EXIT_BUFFER_VH_MOBILE : EXIT_BUFFER_VH_DESKTOP)) /
-          100;
+        const EXIT_BUFFER_VH = mobile
+          ? EXIT_BUFFER_VH_MOBILE
+          : EXIT_BUFFER_VH_DESKTOP;
 
+        const exitBufferPx = (viewportH * EXIT_BUFFER_VH) / 100;
         const stepsHeightPx = Math.max(1, pinnedHeightPx - exitBufferPx);
         const stepPx = stepsHeightPx / steps.length;
+
         if (stepPx <= 0) return;
 
         if (within < 0) {
@@ -228,7 +187,7 @@ export default function IdentityScroll() {
       window.removeEventListener("scroll", onScroll);
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
     };
-  }, [steps.length, mobile]);
+  }, [steps.length, mobile, pathname]);
 
   const DISPLAY_FONT =
     "allumi-std-extended, allumi, var(--font-display), ui-sans-serif, system-ui";
@@ -341,7 +300,7 @@ export default function IdentityScroll() {
         </div>
       </header>
 
-      <section id="s1" className="relative min-h-[100dvh] w-full">
+      <section id="s1" className="relative min-h-[100svh] w-full">
         <div className="absolute inset-0">
           <video
             autoPlay
@@ -363,7 +322,7 @@ export default function IdentityScroll() {
           />
         </div>
 
-        <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-7xl items-center justify-center px-6 pt-20">
+        <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl items-center justify-center px-6 pt-20">
           <div className="w-full max-w-7xl text-center">
             <div
               className="tracking-[0.22em]"
@@ -417,7 +376,7 @@ export default function IdentityScroll() {
         className="relative w-full"
         style={pinnedHeightStyle}
       >
-        <div className="sticky top-0 h-[100dvh] w-full">
+        <div className="sticky top-0 h-[100svh] w-full">
           <div className="absolute inset-0">
             {steps.map((s, i) => (
               <div
@@ -442,7 +401,7 @@ export default function IdentityScroll() {
             ))}
           </div>
 
-          <div className="relative z-10 mx-auto flex h-[100dvh] max-w-6xl items-center justify-center px-6 pt-20">
+          <div className="relative z-10 mx-auto flex h-[100svh] max-w-6xl items-center justify-center px-6 pt-20">
             <div className="w-full max-w-5xl text-center">
               {isIntro && (
                 <div className="text-sm tracking-wide" style={{ color: GOLD }}>
@@ -504,13 +463,13 @@ export default function IdentityScroll() {
         </div>
       </section>
 
-      <section id="s7" className="relative min-h-[100dvh] w-full overflow-hidden">
+      <section id="s7" className="relative min-h-[100svh] w-full overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_45%,rgba(24,49,44,0.14),transparent_55%)]" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0E0F13]/85 via-[#0E0F13]/92 to-[#0E0F13]" />
         </div>
 
-        <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-6xl items-center justify-center px-6 pt-20">
+        <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-center justify-center px-6 pt-20">
           <div className="w-full max-w-4xl text-center">
             <div className="text-xs tracking-[0.18em]" style={{ color: GOLD }}>
               READY TO UPGRADE?
