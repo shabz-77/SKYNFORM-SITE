@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function FeaturesPage() {
   const DISPLAY_FONT =
@@ -10,6 +12,9 @@ export default function FeaturesPage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [videoStarted, setVideoStarted] = useState(false);
+
+  const demoVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const onScroll = () => setMenuOpen(false);
@@ -35,7 +40,6 @@ export default function FeaturesPage() {
         bullets: [
           "Real-time rendering powered by Unreal Engine",
           "Runs live on any phone or laptop. No app, no download",
-          "Premium lighting and material realism",
         ],
       },
       {
@@ -44,8 +48,7 @@ export default function FeaturesPage() {
         tagline: "Know what they want before they walk in.",
         bullets: [
           "Save and share builds with unique links",
-          "Lead capture with deal sheet previews",
-          "Analytics: customer selections, session duration, revisit sessions",
+          "Analytics: customer selections, session duration, lead capture",
         ],
       },
       {
@@ -53,8 +56,7 @@ export default function FeaturesPage() {
         title: "Operational Efficiency",
         tagline: "Helps shops close deals faster.",
         bullets: [
-          "Custom identity deal packages",
-          "Upsell builder",
+          "Upsell builder and deal packages",
           "A repeatable, premium sales flow for the team",
         ],
       },
@@ -72,6 +74,18 @@ export default function FeaturesPage() {
   const heroTitleSize = isMobile
     ? "clamp(28px, 7.4vw, 36px)"
     : "clamp(34px, 4.2vw, 58px)";
+
+  const sectionTitleSize = "clamp(32px, 4.5vw, 54px)";
+
+  const handlePlayDemo = async () => {
+    const video = demoVideoRef.current;
+    if (!video) return;
+
+    try {
+      await video.play();
+      setVideoStarted(true);
+    } catch {}
+  };
 
   return (
     <main className="relative w-full overflow-x-hidden bg-[#0E0F13] text-white">
@@ -93,33 +107,33 @@ export default function FeaturesPage() {
             className="pointer-events-auto mt-4 flex items-center justify-between rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 backdrop-blur md:px-8 md:py-3.5"
             style={{ boxShadow: "0 0 30px rgba(0,0,0,0.28)" }}
           >
-            <a
+            <Link
               href="/"
               className="text-xs tracking-[0.22em] text-white/80 hover:text-white/95"
               style={{ fontFamily: DISPLAY_FONT, fontWeight: 500 }}
             >
               HOME
-            </a>
+            </Link>
 
             <nav className="hidden items-center md:flex" style={{ gap: "36px" }}>
-              <a
+              <Link
                 href="/features"
                 className="text-xs tracking-[0.16em] text-white/90 hover:text-white"
               >
                 FEATURES
-              </a>
+              </Link>
               <a
                 href="https://configurator.skynform.com"
                 className="text-xs tracking-[0.16em] text-white/72 hover:text-white/92"
               >
                 CONFIGURATOR
               </a>
-              <a
+              <Link
                 href="/contact"
                 className="text-xs tracking-[0.16em] text-white/72 hover:text-white/92"
               >
                 CONTACT
-              </a>
+              </Link>
             </nav>
 
             <div className="relative md:hidden pointer-events-auto">
@@ -127,7 +141,7 @@ export default function FeaturesPage() {
                 type="button"
                 aria-label="Menu"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-white/65 hover:text-white"
+                className="-m-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-4 py-3 text-white/65 hover:text-white"
               >
                 <span className="inline-flex gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-white/62" />
@@ -141,24 +155,24 @@ export default function FeaturesPage() {
                   className="absolute right-0 top-12 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#0E0F13]/95 backdrop-blur"
                   style={{ boxShadow: "0 0 34px rgba(0,0,0,0.45)" }}
                 >
-                  <a
+                  <Link
                     href="/features"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Features
-                  </a>
+                  </Link>
                   <a
                     href="https://configurator.skynform.com"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Configurator
                   </a>
-                  <a
+                  <Link
                     href="/contact"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Contact
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
@@ -167,7 +181,17 @@ export default function FeaturesPage() {
       </header>
 
       <section className="relative z-10 min-h-[100svh] w-full">
-        <SectionDivider gold={GOLD} />
+        <div className="absolute inset-0 -z-10">
+          <Image
+            src="/brand/featureshero2.png"
+            alt="SKYNFORM features hero"
+            fill
+            priority
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/85" />
+        </div>
+
         <div className="mx-auto flex min-h-[100svh] max-w-7xl items-center justify-center px-6 pt-16 pb-24">
           <div className="w-full max-w-7xl text-center">
             <div className="text-xs tracking-[0.18em]" style={{ color: GOLD }}>
@@ -184,15 +208,10 @@ export default function FeaturesPage() {
                 fontSize: heroTitleSize,
               }}
             >
-              A premium sales tool
+              A digital showroom
               <br />
-              for wrap shops
+              on your website
             </h1>
-
-            <p className="mx-auto mt-5 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              Built to help premium shops present better, close faster, and
-              increase perceived value through real-time customer visualization.
-            </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <a
@@ -216,7 +235,7 @@ export default function FeaturesPage() {
 
       <section id="how-you-win" className="relative z-10 min-h-[100svh] w-full">
         <SectionDivider gold={GOLD} />
-        <div className="mx-auto flex min-h-[100svh] max-w-6xl items-center justify-center px-6 pt-24 pb-16">
+        <div className="mx-auto flex min-h-[100svh] max-w-6xl items-center justify-center px-6 py-44">
           <div className="w-full max-w-5xl text-center">
             <div className="text-xs tracking-[0.18em]" style={{ color: GOLD }}>
               BUSINESS REALITY
@@ -229,27 +248,39 @@ export default function FeaturesPage() {
                 fontWeight: 400,
                 lineHeight: 1.06,
                 letterSpacing: "normal",
-                fontSize: "clamp(38px, 6vw, 66px)",
+                fontSize: sectionTitleSize,
               }}
             >
-              Here’s how you win
+              A better way to sell wraps
             </h2>
 
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              The shift is simple: remove hesitation, improve visualization, and
-              make the customer feel certain faster.
+              A clear approach to visualize, compare, and move customers toward
+              a decision.
             </p>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-2">
+            <div className="mx-auto mt-14 max-w-5xl">
+              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03]">
+                <div className="relative aspect-[16/8] w-full">
+                  <Image
+                    src="/brand/old-vs-new-v2.png"
+                    alt="Modern configurator shown on iPad"
+                    fill
+                    className="object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/22 via-black/10 to-black/28" />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-6 md:grid-cols-2">
               <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7 text-left">
                 <div className="text-sm tracking-[0.14em]" style={{ color: GOLD }}>
                   OLD WAY
                 </div>
                 <ul className="mt-5 grid gap-3 text-sm text-white/70">
                   <li>• Static or offline renders</li>
-                  <li>• Online references or PS preview</li>
                   <li>• Time consuming consultations</li>
-                  <li>• Low commitment inquiries</li>
                   <li>• “I can’t picture it”</li>
                 </ul>
               </div>
@@ -266,9 +297,7 @@ export default function FeaturesPage() {
                 </div>
                 <ul className="mt-5 grid gap-3 text-sm text-white/70">
                   <li>• Real-time interactive 3D configurator</li>
-                  <li>• Identity-driven selections</li>
                   <li>• Seamless consultations in person or remote</li>
-                  <li>• Emotional lock-in inquiries</li>
                   <li>• “That’s it. That’s mine!”</li>
                 </ul>
               </div>
@@ -292,17 +321,15 @@ export default function FeaturesPage() {
                   fontFamily: DISPLAY_FONT,
                   fontWeight: 400,
                   lineHeight: 1.06,
-                  fontSize: "clamp(34px, 5.6vw, 60px)",
+                  fontSize: sectionTitleSize,
                 }}
               >
-                Not features.
-                <br />
-                Leverage.
+                Not features. Leverage.
               </h2>
 
               <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-                SKYNFORM is built for premium shops that want positioning,
-                conversion, and control, without friction.
+                SKYNFORM gives wrap shops a clearer sales process, stronger
+                positioning, and better control over how customers buy.
               </p>
             </div>
 
@@ -310,7 +337,7 @@ export default function FeaturesPage() {
               {pillars.map((p) => (
                 <div
                   key={p.title}
-                  className="rounded-3xl border border-white/10 bg-white/[0.03] p-7"
+                  className="rounded-3xl border border-white/10 bg-white/[0.03] px-7 pb-9 pt-7"
                 >
                   <div className="text-xs tracking-[0.18em]" style={{ color: GOLD }}>
                     {p.id}
@@ -328,9 +355,11 @@ export default function FeaturesPage() {
                     {p.title}
                   </h3>
 
-                  <div className="mt-3 text-sm text-white/75">{p.tagline}</div>
+                  <div className="mt-7 text-sm" style={{ color: `${GOLD}CC` }}>
+                    {p.tagline}
+                  </div>
 
-                  <ul className="mt-6 grid gap-3 text-sm text-white/70">
+                  <ul className="mt-2.5 grid gap-2 text-sm text-white/70">
                     {p.bullets.map((b) => (
                       <li key={b}>• {b}</li>
                     ))}
@@ -338,18 +367,13 @@ export default function FeaturesPage() {
                 </div>
               ))}
             </div>
-
-            <div className="mx-auto mt-12 max-w-4xl text-center text-sm leading-relaxed text-white/65">
-              Built to make premium shops look sharper, sell faster, and feel
-              more valuable before the customer ever asks for the price.
-            </div>
           </div>
         </div>
       </section>
 
       <section className="relative z-10 min-h-[100svh] w-full">
         <SectionDivider gold={GOLD} />
-        <div className="mx-auto flex min-h-[100svh] max-w-6xl items-center justify-center px-6 py-24">
+        <div className="mx-auto flex min-h-[100svh] max-w-6xl items-center justify-center px-6 py-44">
           <div className="w-full max-w-5xl text-center">
             <div className="text-xs tracking-[0.18em]" style={{ color: GOLD }}>
               WHY THIS WINS
@@ -361,69 +385,67 @@ export default function FeaturesPage() {
                 fontFamily: DISPLAY_FONT,
                 fontWeight: 400,
                 lineHeight: 1.06,
-                fontSize: "clamp(34px, 5.6vw, 60px)",
+                fontSize: sectionTitleSize,
               }}
             >
-              Identity-driven visualization
+              Faster decisions
               <br />
-              + business intelligence.
+              + business intelligence
             </h2>
 
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              This is the real differentiator. Not 3D. Not Unreal. Not
-              streaming. It’s the combination of emotional lock-in and
-              measurable conversion power.
+              Track what they choose. Understand what they want. Close faster.
             </p>
 
-            <div className="mx-auto mt-12 grid gap-6 md:grid-cols-2">
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7 text-left">
-                <div className="text-sm tracking-[0.14em]" style={{ color: GOLD }}>
-                  DIFFERENTIATION
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-white/70">
-                  Premium shops want to say: “We are not like other wrap shops.”
-                  SKYNFORM becomes a brand statement, a marketing asset, and a
-                  sales weapon.
-                </p>
-              </div>
+            <div className="mx-auto mt-14 max-w-5xl">
+              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03]">
+                <div className="relative aspect-[16/9] w-full bg-black">
+                  <video
+                    ref={demoVideoRef}
+                    className="h-full w-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    poster="/brand/product-hero.jpg"
+                    onPlay={() => setVideoStarted(true)}
+                    onPause={() => setVideoStarted(false)}
+                    onEnded={() => setVideoStarted(false)}
+                  >
+                    <source src="/brand/product-demo-v2.mp4" type="video/mp4" />
+                  </video>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7 text-left">
-                <div className="text-sm tracking-[0.14em]" style={{ color: GOLD }}>
-                  HIGHER TICKET JOBS
+                  {!videoStarted && (
+                    <button
+                      type="button"
+                      aria-label="Play demo video"
+                      onClick={handlePlayDemo}
+                      className="absolute inset-0 z-10 flex items-center justify-center bg-black/10 transition hover:bg-black/16"
+                    >
+                      <span
+                        className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-black/45 backdrop-blur"
+                        style={{
+                          boxShadow:
+                            "0 0 24px rgba(0,0,0,0.35), 0 0 10px rgba(163,133,96,0.14)",
+                        }}
+                      >
+                        <span className="ml-1 block h-0 w-0 border-y-[12px] border-y-transparent border-l-[20px] border-l-white/90" />
+                      </span>
+                    </button>
+                  )}
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-white/70">
-                  Luxury presentation increases perceived value. That supports
-                  higher pricing and helps filter out low-intent inquiries.
-                </p>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7 text-left">
-                <div className="text-sm tracking-[0.14em]" style={{ color: GOLD }}>
-                  CONTENT MACHINE
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-white/70">
-                  Endless spec variations, identity storytelling, and shareable
-                  visuals, built to feed Reels, TikTok, and social proof.
-                </p>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7 text-left">
-                <div className="text-sm tracking-[0.14em]" style={{ color: GOLD }}>
-                  DATA ADVANTAGE
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-white/70">
-                  Track what converts: colors, identities, drop-off points, and
-                  shares. You stop guessing and start improving sales with
-                  evidence.
-                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 min-h-[100svh] w-full">
+      <section className="relative z-10 min-h-[100svh] w-full overflow-hidden">
         <SectionDivider gold={GOLD} />
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_45%,rgba(24,49,44,0.14),transparent_55%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0E0F13]/85 via-[#0E0F13]/92 to-[#0E0F13]" />
+        </div>
+
         <div className="mx-auto flex min-h-[100svh] max-w-6xl items-center justify-center px-6 py-24">
           <div className="w-full max-w-4xl text-center">
             <div className="text-xs tracking-[0.18em]" style={{ color: GOLD }}>
@@ -436,20 +458,20 @@ export default function FeaturesPage() {
                 fontFamily: DISPLAY_FONT,
                 fontWeight: 400,
                 lineHeight: 1.06,
-                fontSize: "clamp(34px, 5.6vw, 60px)",
+                fontSize: sectionTitleSize,
               }}
             >
               Upgrade your showroom.
               <br />
-              Increase conviction.
+              Close with clarity.
             </h2>
 
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              The fastest way to reduce hesitation is to let customers see their
-              identity live, instantly, on any device.
+              Give your customers a better way to see their vision and your shop a
+              stronger way to convert it.
             </p>
 
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-14 flex flex-wrap items-center justify-center gap-3">
               <a
                 href="https://configurator.skynform.com"
                 className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white backdrop-blur"
@@ -458,12 +480,12 @@ export default function FeaturesPage() {
                 Open configurator
               </a>
 
-              <a
+              <Link
                 href="/contact"
                 className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/90 backdrop-blur hover:bg-white/10"
               >
                 Contact SKYNFORM
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -476,7 +498,7 @@ function SectionDivider({ gold }: { gold: string }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center">
       <div
-        className="mt-4 h-px w-[min(92%,1400px)]"
+        className="h-px w-[min(92%,1400px)]"
         style={{
           background: `linear-gradient(to right, transparent, ${gold}45 12%, ${gold} 50%, ${gold}45 88%, transparent)`,
         }}

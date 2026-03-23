@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+
+type ToastState = {
+  type: "success" | "error";
+  message: string;
+} | null;
 
 export default function ContactPage() {
   const DISPLAY_FONT =
@@ -10,12 +16,18 @@ export default function ContactPage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<ToastState>(null);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     subject: "",
     message: "",
+    website: "",
   });
+
+  const [formStartedAt, setFormStartedAt] = useState<number>(Date.now());
 
   useEffect(() => {
     const onScroll = () => setMenuOpen(false);
@@ -32,15 +44,75 @@ export default function ContactPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!toast) return;
+
+    const timer = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
+
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setForm({
+      name: "",
+      email: "",
+      subject: "",
+      message: "",
+      website: "",
+    });
+    setFormStartedAt(Date.now());
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Form integration will be connected next.");
+
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setToast(null);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...form,
+          formStartedAt,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.ok) {
+        resetForm();
+        setToast({
+          type: "success",
+          message: "Message sent successfully.",
+        });
+      } else {
+        setToast({
+          type: "error",
+          message: data?.error || "Something went wrong.",
+        });
+      }
+    } catch {
+      setToast({
+        type: "error",
+        message: "Failed to send message.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const primaryButtonStyle = {
@@ -56,6 +128,23 @@ export default function ContactPage() {
 
   return (
     <main className="relative min-h-[100svh] overflow-x-hidden bg-[#0E0F13] text-white">
+      {toast && (
+        <div className="pointer-events-none fixed right-4 top-24 z-[70]">
+          <div
+            className={`rounded-2xl border px-4 py-3 text-sm backdrop-blur ${
+              toast.type === "success"
+                ? "border-white/10 bg-[#13211d]/90 text-white"
+                : "border-white/10 bg-[#2a1717]/90 text-white"
+            }`}
+            style={{
+              boxShadow: "0 0 24px rgba(0,0,0,0.28)",
+            }}
+          >
+            {toast.message}
+          </div>
+        </div>
+      )}
+
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.016] [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:88px_88px]" />
         <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_50%,transparent_0%,rgba(0,0,0,0.14)_52%,rgba(0,0,0,0.36)_100%)]" />
@@ -67,33 +156,33 @@ export default function ContactPage() {
             className="pointer-events-auto mt-4 flex items-center justify-between rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 backdrop-blur md:px-8 md:py-3.5"
             style={{ boxShadow: "0 0 30px rgba(0,0,0,0.28)" }}
           >
-            <a
+            <Link
               href="/"
               className="text-xs tracking-[0.22em] text-white/80 hover:text-white/95"
               style={{ fontFamily: DISPLAY_FONT, fontWeight: 500 }}
             >
               HOME
-            </a>
+            </Link>
 
             <nav className="hidden items-center md:flex" style={{ gap: "36px" }}>
-              <a
+              <Link
                 href="/features"
                 className="text-xs tracking-[0.16em] text-white/72 hover:text-white/92"
               >
                 FEATURES
-              </a>
+              </Link>
               <a
                 href="https://configurator.skynform.com"
                 className="text-xs tracking-[0.16em] text-white/72 hover:text-white/92"
               >
                 CONFIGURATOR
               </a>
-              <a
+              <Link
                 href="/contact"
                 className="text-xs tracking-[0.16em] text-white/90 hover:text-white"
               >
                 CONTACT
-              </a>
+              </Link>
             </nav>
 
             <div className="relative md:hidden pointer-events-auto">
@@ -101,7 +190,7 @@ export default function ContactPage() {
                 type="button"
                 aria-label="Menu"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-white/65 hover:text-white"
+                className="-m-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-4 py-3 text-white/65 hover:text-white"
               >
                 <span className="inline-flex gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-white/62" />
@@ -115,24 +204,24 @@ export default function ContactPage() {
                   className="absolute right-0 top-12 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#0E0F13]/95 backdrop-blur"
                   style={{ boxShadow: "0 0 34px rgba(0,0,0,0.45)" }}
                 >
-                  <a
+                  <Link
                     href="/features"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Features
-                  </a>
+                  </Link>
                   <a
                     href="https://configurator.skynform.com"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Configurator
                   </a>
-                  <a
+                  <Link
                     href="/contact"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Contact
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
@@ -156,14 +245,11 @@ export default function ContactPage() {
                 fontSize: heroTitleSize,
               }}
             >
-              Let’s build the right
-              <br />
-              experience for you.
+              Bring your vision to life
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              Whether you want a premium sales tool, a branded configurator, or a custom workflow for
-              your shop, SKYNFORM is open to building around your needs.
+              Built for wrap shops, custom builds, and one-off projects.
             </p>
           </div>
 
@@ -173,7 +259,7 @@ export default function ContactPage() {
             </div>
 
             <h2
-              className="mt-5 max-w-[16ch] text-white"
+              className="mt-5 max-w-[22ch] text-white"
               style={{
                 fontFamily: DISPLAY_FONT,
                 fontWeight: 400,
@@ -181,21 +267,32 @@ export default function ContactPage() {
                 fontSize: "clamp(28px, 4vw, 42px)",
               }}
             >
-              Start the conversation.
+              Tell us about your project.
             </h2>
 
             <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-              Share what you need and SKYNFORM will shape the right premium experience around it.
+              Share a few details and our team will reach out.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-8 grid gap-4 text-left">
+              <input
+                type="text"
+                name="website"
+                value={form.website}
+                onChange={handleChange}
+                autoComplete="off"
+                tabIndex={-1}
+                className="hidden"
+              />
+
               <input
                 type="text"
                 name="name"
                 placeholder="Your name"
                 value={form.name}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20"
+                disabled={isSubmitting}
+                className="w-full rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20 disabled:opacity-60"
               />
 
               <input
@@ -204,7 +301,8 @@ export default function ContactPage() {
                 placeholder="Your email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20"
+                disabled={isSubmitting}
+                className="w-full rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20 disabled:opacity-60"
               />
 
               <input
@@ -213,7 +311,8 @@ export default function ContactPage() {
                 placeholder="Subject"
                 value={form.subject}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20"
+                disabled={isSubmitting}
+                className="w-full rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20 disabled:opacity-60"
               />
 
               <textarea
@@ -222,23 +321,21 @@ export default function ContactPage() {
                 value={form.message}
                 onChange={handleChange}
                 rows={7}
-                className="w-full resize-none rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20"
+                disabled={isSubmitting}
+                className="w-full resize-none rounded-2xl border border-white/10 bg-[#111318] px-4 py-3 text-white outline-none placeholder:text-white/38 focus:border-white/20 disabled:opacity-60"
               />
 
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white backdrop-blur"
+                  disabled={isSubmitting}
+                  className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white backdrop-blur disabled:cursor-not-allowed disabled:opacity-70"
                   style={primaryButtonStyle}
                 >
-                  Send
+                  {isSubmitting ? "Sending..." : "Send"}
                 </button>
               </div>
             </form>
-
-            <p className="mt-5 text-xs leading-relaxed text-white/45">
-              Form delivery can be connected to Formspree or Resend next.
-            </p>
           </div>
         </div>
       </section>

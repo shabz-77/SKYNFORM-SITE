@@ -1,10 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function IdentityScroll() {
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
+
   const pinnedRef = useRef<HTMLElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -18,30 +21,42 @@ export default function IdentityScroll() {
   const GOLD = "#A38560";
 
   useEffect(() => {
+    if (pathname !== "/") return;
+
     setHasMounted(true);
+    setActiveIdx(0);
+    setMenuOpen(false);
 
     const mq = window.matchMedia("(max-width: 768px)");
     const apply = () => setIsMobile(mq.matches);
     apply();
-
     mq.addEventListener?.("change", apply);
 
     const setVh = () => setVhPx(window.innerHeight || 0);
     setVh();
+
+    const resetPage = () => {
+      window.scrollTo({ top: 0, behavior: "auto" });
+
+      requestAnimationFrame(() => {
+        setVh();
+        window.dispatchEvent(new Event("scroll"));
+      });
+    };
+
+    resetPage();
+
     window.addEventListener("resize", setVh, { passive: true });
+    window.addEventListener("pageshow", resetPage);
 
     return () => {
       mq.removeEventListener?.("change", apply);
       window.removeEventListener("resize", setVh);
+      window.removeEventListener("pageshow", resetPage);
     };
-  }, []);
+  }, [pathname]);
 
   const mobile = hasMounted ? isMobile : false;
-
-  const mobileRef = useRef(false);
-  useEffect(() => {
-    mobileRef.current = mobile;
-  }, [mobile]);
 
   const steps = useMemo(
     () => [
@@ -61,7 +76,8 @@ export default function IdentityScroll() {
       {
         key: "purist",
         title: "Purist",
-        description: "For drivers who believe great design doesn’t need to shout.",
+        description:
+          "For drivers who believe great design doesn’t need to shout.",
         image: "/identity/purist.jpg",
       },
       {
@@ -84,70 +100,20 @@ export default function IdentityScroll() {
     const el = document.getElementById(id);
     if (!el) return;
 
-    if (mobileRef.current) {
-      const top = el.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top, behavior: "smooth" });
-      return;
-    }
-
-    const root = rootRef.current;
-    if (!root) return;
-    const target = root.querySelector<HTMLElement>(`#${id}`);
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top, behavior: "smooth" });
   }
 
   useEffect(() => {
     const onScroll = () => setMenuOpen(false);
 
-    const bind = () => {
-      if (mobileRef.current) {
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-      }
-
-      const scroller = rootRef.current;
-      if (!scroller) return () => {};
-      scroller.addEventListener("scroll", onScroll, { passive: true });
-      return () => scroller.removeEventListener("scroll", onScroll);
-    };
-
-    const unbind = bind();
-    const t = window.setTimeout(() => {
-      unbind();
-      bind();
-    }, 0);
-
-    return () => {
-      window.clearTimeout(t);
-      unbind();
-    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
-    const STEP_VH_DESKTOP = 90;
-    const EXIT_BUFFER_VH_DESKTOP = 70;
-
-    const STEP_VH_MOBILE = 120;
-    const EXIT_BUFFER_VH_MOBILE = 95;
-
-    const getScrollTop = () =>
-      mobileRef.current ? window.scrollY : rootRef.current?.scrollTop ?? 0;
-
-    const getPinnedTop = () => {
-      const pinned = pinnedRef.current;
-      if (!pinned) return 0;
-
-      if (mobileRef.current) {
-        return pinned.getBoundingClientRect().top + window.scrollY;
-      }
-      return pinned.offsetTop;
-    };
-
-    const getViewportH = () =>
-      mobileRef.current
-        ? window.innerHeight
-        : rootRef.current?.clientHeight ?? window.innerHeight;
+    const EXIT_BUFFER_VH_DESKTOP = 64;
+    const EXIT_BUFFER_VH_MOBILE = 80;
 
     const onScroll = () => {
       if (rafRef.current) return;
@@ -158,15 +124,15 @@ export default function IdentityScroll() {
         const pinned = pinnedRef.current;
         if (!pinned) return;
 
-        const scrollTop = getScrollTop();
-        const pinnedTop = getPinnedTop();
+        const scrollTop = window.scrollY;
+        const pinnedTop = pinned.getBoundingClientRect().top + window.scrollY;
         const within = scrollTop - pinnedTop;
 
         const pinnedHeightPx = pinned.getBoundingClientRect().height;
         if (pinnedHeightPx <= 0) return;
 
-        const viewportH = getViewportH();
-        const EXIT_BUFFER_VH = mobileRef.current
+        const viewportH = window.innerHeight;
+        const EXIT_BUFFER_VH = mobile
           ? EXIT_BUFFER_VH_MOBILE
           : EXIT_BUFFER_VH_DESKTOP;
 
@@ -174,7 +140,12 @@ export default function IdentityScroll() {
         const stepsHeightPx = Math.max(1, pinnedHeightPx - exitBufferPx);
         const stepPx = stepsHeightPx / steps.length;
 
-        if (within < 0 || within >= pinnedHeightPx) return;
+        if (stepPx <= 0) return;
+
+        if (within < 0) {
+          setActiveIdx(0);
+          return;
+        }
 
         if (within >= stepsHeightPx) {
           setActiveIdx(steps.length - 1);
@@ -185,48 +156,43 @@ export default function IdentityScroll() {
           0,
           Math.min(steps.length - 1, Math.floor(within / stepPx))
         );
+
         setActiveIdx(idx);
       });
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    const scroller = rootRef.current;
-    scroller?.addEventListener("scroll", onScroll, { passive: true });
 
-    onScroll();
+    requestAnimationFrame(() => {
+      onScroll();
+    });
 
     return () => {
       window.removeEventListener("scroll", onScroll);
-      scroller?.removeEventListener("scroll", onScroll);
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
     };
-  }, [steps.length]);
+  }, [steps.length, mobile, pathname]);
 
   const DISPLAY_FONT =
     "allumi-std-extended, allumi, var(--font-display), ui-sans-serif, system-ui";
 
   const activeStep = steps[activeIdx];
 
-  const STEP_VH = mobile ? 120 : 90;
-  const EXIT_BUFFER_VH = mobile ? 95 : 70;
+  const STEP_VH = mobile ? 98 : 84;
+  const EXIT_BUFFER_VH = mobile ? 80 : 64;
 
-  const pinnedHeightStyle = mobile
-    ? {
-        height:
-          vhPx > 0
-            ? `${((steps.length * STEP_VH + EXIT_BUFFER_VH) / 100) * vhPx}px`
-            : "auto",
-      }
-    : { height: `${steps.length * STEP_VH + EXIT_BUFFER_VH}svh` };
-
-  const rootClass = mobile
-    ? "w-full bg-[#0E0F13] text-white"
-    : "h-[100svh] w-full overflow-y-auto overscroll-y-none bg-[#0E0F13] text-white scroll-smooth";
+  const pinnedHeightStyle =
+    vhPx > 0
+      ? {
+          height: `${((steps.length * STEP_VH + EXIT_BUFFER_VH) / 100) * vhPx}px`,
+        }
+      : { height: "auto" };
 
   const isIntro = activeStep?.key === "intro";
   const heroTitleSize = mobile
     ? "clamp(28px, 7.4vw, 36px)"
     : "clamp(34px, 4.2vw, 58px)";
+  const sectionTitleSize = "clamp(32px, 4.5vw, 54px)";
   const titleSize = isIntro ? heroTitleSize : "clamp(52px, 7.2vw, 96px)";
   const paraSize = isIntro ? undefined : "clamp(18px, 2.6vw, 30px)";
 
@@ -238,45 +204,40 @@ export default function IdentityScroll() {
   } as const;
 
   return (
-    <div
-      ref={rootRef}
-      suppressHydrationWarning
-      className={rootClass}
-      style={mobile ? undefined : { WebkitOverflowScrolling: "touch" }}
-    >
+    <div suppressHydrationWarning className="w-full bg-[#0E0F13] text-white">
       <header className="fixed left-0 top-0 z-50 w-full pointer-events-none">
         <div className="mx-auto max-w-7xl px-5 sm:px-6">
           <div
             className="pointer-events-auto mt-4 flex items-center justify-between rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 backdrop-blur md:px-8 md:py-3.5"
             style={{ boxShadow: "0 0 34px rgba(0,0,0,0.32)" }}
           >
-            <a
+            <Link
               href="/"
               className="text-xs tracking-[0.22em] text-white/80 hover:text-white/95"
               style={{ fontFamily: DISPLAY_FONT, fontWeight: 500 }}
             >
               HOME
-            </a>
+            </Link>
 
             <nav className="hidden items-center md:flex" style={{ gap: "36px" }}>
-              <a
+              <Link
                 href="/features"
                 className="text-xs tracking-[0.16em] text-white/72 hover:text-white/92"
               >
                 FEATURES
-              </a>
+              </Link>
               <a
                 href="https://configurator.skynform.com"
                 className="text-xs tracking-[0.16em] text-white/72 hover:text-white/92"
               >
                 CONFIGURATOR
               </a>
-              <a
+              <Link
                 href="/contact"
                 className="text-xs tracking-[0.16em] text-white/72 hover:text-white/92"
               >
                 CONTACT
-              </a>
+              </Link>
             </nav>
 
             <div className="relative md:hidden pointer-events-auto">
@@ -284,7 +245,7 @@ export default function IdentityScroll() {
                 type="button"
                 aria-label="Menu"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-white/65 hover:text-white"
+                className="-m-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-4 py-3 text-white/65 hover:text-white"
               >
                 <span className="inline-flex gap-1.5">
                   <span className="h-1 w-1 rounded-full bg-white/62" />
@@ -298,24 +259,24 @@ export default function IdentityScroll() {
                   className="absolute right-0 top-12 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#0E0F13]/95 backdrop-blur"
                   style={{ boxShadow: "0 0 34px rgba(0,0,0,0.45)" }}
                 >
-                  <a
+                  <Link
                     href="/features"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Features
-                  </a>
+                  </Link>
                   <a
                     href="https://configurator.skynform.com"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Configurator
                   </a>
-                  <a
+                  <Link
                     href="/contact"
                     className="block px-4 py-3 text-sm text-white/85 hover:bg-white/[0.06]"
                   >
                     Contact
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
@@ -335,15 +296,6 @@ export default function IdentityScroll() {
           >
             <source src="/brand/hero-video.mp4" type="video/mp4" />
           </video>
-
-          {/* fallback image */}
-          <Image
-            src="/brand/heros2.jpg"
-            alt="SKYNFORM hero"
-            fill
-            priority
-            className="object-cover object-center opacity-0"
-          />
           <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/80" />
           <div
             className="absolute inset-0"
@@ -382,39 +334,38 @@ export default function IdentityScroll() {
               experience for wrap shops.
             </h1>
 
-            <p className="mx-auto mt-5 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              A premium configurator and sales environment powered by Unreal Engine, designed to help
-              shops sell personalization with clarity and confidence on any device.
-            </p>
-
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <a
-                href="https://configurator.skynform.com"
+              <Link
+                href="/features"
                 className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white backdrop-blur"
                 style={primaryButtonStyle}
               >
-                Explore configurator
-              </a>
+                Explore features
+              </Link>
 
-              <button
-                type="button"
-                onClick={() => scrollToId("s2")}
+              <a
+                href="https://configurator.skynform.com"
                 className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/90 backdrop-blur hover:bg-white/10"
               >
-                Explore archetypes
-              </button>
+                Explore configurator
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      <section ref={pinnedRef} id="s2" className="relative w-full" style={pinnedHeightStyle}>
+      <section
+        ref={pinnedRef}
+        id="s2"
+        className="relative w-full"
+        style={pinnedHeightStyle}
+      >
         <div className="sticky top-0 h-[100svh] w-full">
           <div className="absolute inset-0">
             {steps.map((s, i) => (
               <div
                 key={s.key}
-                className="absolute inset-0 transition-opacity duration-700 ease-out"
+                className="absolute inset-0 transition-opacity duration-[900ms] ease-out"
                 style={{
                   opacity: i === activeIdx ? 1 : 0,
                   willChange: "opacity",
@@ -471,14 +422,23 @@ export default function IdentityScroll() {
                   className="mt-10 inline-flex items-center gap-3 text-xs tracking-[0.14em] hover:text-white/60"
                   style={{ color: GOLD }}
                 >
-                  <span className="h-[1px] w-10" style={{ backgroundColor: `${GOLD}66` }} />
+                  <span
+                    className="h-[1px] w-10"
+                    style={{ backgroundColor: `${GOLD}66` }}
+                  />
                   SCROLL TO EXPLORE
-                  <span className="h-[1px] w-10" style={{ backgroundColor: `${GOLD}66` }} />
+                  <span
+                    className="h-[1px] w-10"
+                    style={{ backgroundColor: `${GOLD}66` }}
+                  />
                 </button>
               )}
 
               {activeStep?.key !== "intro" && (
-                <div className="mt-10 text-xs tracking-[0.18em]" style={{ color: `${GOLD}B3` }}>
+                <div
+                  className="mt-10 text-xs tracking-[0.18em]"
+                  style={{ color: `${GOLD}B3` }}
+                >
                   {Math.min(4, Math.max(1, activeIdx))}/4
                 </div>
               )}
@@ -487,8 +447,11 @@ export default function IdentityScroll() {
         </div>
       </section>
 
-      <section id="s7" className="relative min-h-[100svh] w-full">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-[#050607] to-black" />
+      <section id="s7" className="relative min-h-[100svh] w-full overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_45%,rgba(24,49,44,0.14),transparent_55%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0E0F13]/85 via-[#0E0F13]/92 to-[#0E0F13]" />
+        </div>
 
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl items-center justify-center px-6 pt-20">
           <div className="w-full max-w-4xl text-center">
@@ -501,19 +464,18 @@ export default function IdentityScroll() {
               style={{
                 fontFamily: DISPLAY_FONT,
                 fontWeight: 400,
-                fontSize: "clamp(34px, 5.4vw, 60px)",
-                letterSpacing: "normal",
                 lineHeight: 1.06,
+                fontSize: sectionTitleSize,
               }}
             >
               Upgrade your showroom.
               <br />
-              Increase conviction.
+              Close with clarity.
             </h2>
 
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              The fastest way to reduce hesitation is to let customers see their identity live,
-              instantly, on any device.
+              Give your customers a better way to see their vision and your shop a
+              stronger way to convert it.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -525,12 +487,12 @@ export default function IdentityScroll() {
                 Open configurator
               </a>
 
-              <a
+              <Link
                 href="/features"
                 className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/90 backdrop-blur hover:bg-white/10"
               >
                 Explore features
-              </a>
+              </Link>
             </div>
           </div>
         </div>
