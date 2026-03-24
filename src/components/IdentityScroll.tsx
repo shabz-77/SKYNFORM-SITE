@@ -486,11 +486,11 @@ export default function IdentityScroll() {
             >
               Upgrade your showroom.
               <br />
-              Increase conviction.
+              Close with clarity.
             </h2>
 
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/70 sm:text-lg">
-              Give customers a clearer way to see their vision, and your shop a
+              Give your customers a better way to see their vision and your shop a
               stronger way to convert it.
             </p>
 
